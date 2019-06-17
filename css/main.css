@@ -14,19 +14,16 @@ body {
         max-width: 540px;
     }
 }
-
 @media (min-width: 768px) {
     .container {
         max-width: 720px;
     }
 }
-
 @media (min-width: 992px) {
     .container {
         max-width: 960px;
     }
 }
-
 @media (min-width: 1200px) {
     .container {
         max-width: 1140px;
@@ -43,4 +40,8 @@ body {
     height: 600px;
     margin-top: 20px;
     margin-bottom: 40px;
+}
+
+footer p {
+    text-align: center;
 }
