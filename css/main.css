@@ -35,11 +35,43 @@ body {
     margin-bottom: 20px;
 }
 
+span[data-area] {
+    color: rgb(118, 205, 255);
+    cursor: pointer;
+    border-bottom: 1px dotted;
+}
+
+#areas-list-container {
+    max-height: 400px;
+    overflow: scroll;
+    border: solid 1px rgb(68, 68, 68);
+}
+#areas-list-container li {
+    cursor: default;
+}
+.choosen {
+    background: rgb(161, 220, 255);
+}
+/* #areas-list-container li:hover > ul {
+    background: transparent;
+} */
+#areas-list-container p{
+    margin-left: 1em;
+}
+
 #map {
     width: 100%;
     height: 600px;
     margin-top: 20px;
     margin-bottom: 40px;
+}
+
+#spinner {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-bottom: 4px;
+    display: none;
 }
 
 footer p {

@@ -11,7 +11,16 @@
 <body>
     <main>
         <div class="container main-content">
-            <div id="root"></div>
+            <div id="header-container"></div>
+            <p id="selected-areas">Избранные регионы: 
+                <span data-area="1">Москва</span>, 
+                <span data-area="2">Санкт-Петербург</span>, 
+                <span data-area="69">Орёл</span>
+            </p>
+            <div id="areas-list-container"></div>
+            <div id="middle-container"></div>
+            <button id="update-vacs-btn">Обновить базу вакансий</button> <span id="new-area"></span>
+            <img id="spinner" src="img/ajax-loader.gif" />
         </div>
         <div id="map"></div>
     </main>

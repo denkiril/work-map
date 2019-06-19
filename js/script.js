@@ -2,11 +2,71 @@
 // const url = 'https://api.hh.ru/vacancies/?area=1898';
 // const url = 'https://api.hh.ru/vacancies/?area=69&per_page=100';
 // const url = 'https://api.hh.ru/vacancies/?area=';
-const areaCode = 69;
-const areaName = 'Орёл';
-const rootEl = document.querySelector('#root');
+let oldAreaCode = 69;
+let areaCode = oldAreaCode;
+let oldAreaName = 'Орёл';
+let areaName = oldAreaName;
+let choosenEl;
+const headerContainer = document.querySelector('#header-container');
+const areasListContainer = document.querySelector('#areas-list-container');
+const middleContainer = document.querySelector('#middle-container');
+const updateVacsBtn = document.querySelector('#update-vacs-btn');
+const newArea = document.querySelector('#new-area');
+const spinnerEl = document.querySelector('#spinner');
+const mapEl = document.querySelector('#map');
+const selectedAreas = document.querySelector('#selected-areas');
+const apiUrl = 'https://api.hh.ru/';
 
-async function getVacancies(area, page=0) {
+// async function getItemsFromHH(uri, area=null, page=0) {
+//     const perPage = 100;
+//     const getAll = page === -1 ? true : false;
+//     page = getAll ? 0 : page;
+
+//     let url = `${apiUrl}${uri}/?page=${page}&per_page=${perPage}`;
+//     if (area) {
+//         url += `&area=${area}`;
+//     }
+
+//     const response = await fetch(url);
+//     const data = await response.json();
+//     let vacancies = data.items;
+    
+//     if (getAll) {
+//         const pages = data.pages;
+//         for (let p=1; p<pages; p++) {
+//             const newVacancies = await getVacancies(area, p);
+//             vacancies = vacancies.concat(newVacancies);
+//         }
+//     }
+
+//     return vacancies;
+// }
+
+async function getAreas() {
+    // const perPage = 100;
+    // const getAll = page === -1 ? true : false;
+    // page = getAll ? 0 : page;
+
+    // const url = `https://api.hh.ru/areas/?page=${page}&per_page=${perPage}`;
+    const url = `https://api.hh.ru/areas`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+    // let areas = data.items;
+    
+    // if (getAll) {
+    //     const pages = data.pages;
+    //     for (let p=1; p<pages; p++) {
+    //         const newVacancies = await getVacancies(area, p);
+    //         // vacancies.push(newVacancies);
+    //         vacancies = vacancies.concat(newVacancies);
+    //     }
+    // }
+
+    return data;
+}
+
+async function getVacancies(area, page=0, found=null) {
     const perPage = 100;
     const getAll = page === -1 ? true : false;
     page = getAll ? 0 : page;
@@ -18,6 +78,10 @@ async function getVacancies(area, page=0) {
     let vacancies = data.items;
     
     if (getAll) {
+        console.log('getAll');
+        console.log(data);
+        if (found) found.val = data.found;
+
         const pages = data.pages;
         for (let p=1; p<pages; p++) {
             const newVacancies = await getVacancies(area, p);
@@ -110,8 +174,6 @@ function addMarker(vac, map) {
 }
 
 function renderMap(vacancies) {
-    const mapEl = document.querySelector('#map');
-
     const clusterer = new ymaps.Clusterer({
         // clusterIconColor: baseColor,
     });
@@ -125,10 +187,10 @@ function renderMap(vacancies) {
     vacancies.forEach(vac => addMarker(vac, map));
     clusterer.add(map.markers);
     map.geoObjects.add(clusterer);
-    // console.log('map.markers.lenght = ' + map.markers.lenght);
     // console.log(map.markers);
     // center_map( map );
-    if (map.markers) {
+    const markersLenght = Object.keys(map.markers).length;
+    if (markersLenght) {
         map.setBounds(
             map.geoObjects.getBounds(),
             { checkZoomRange: true },
@@ -138,7 +200,42 @@ function renderMap(vacancies) {
     }
 }
 
-function renderData(vacancies) {
+function addAreaList(areas, listsMarkup) {
+    // const areasList = document.createElement('ul');
+    listsMarkup.val += '<ul>';
+    areas.forEach(area => {
+        listsMarkup.val += `<li data-id="${area.id}" data-name="${area.name}">${area.name}`;
+        if (area.areas.length) addAreaList(area.areas, listsMarkup);
+        listsMarkup.val += '</li>';
+    });
+    listsMarkup.val += '</ul>';
+}
+
+function renderAreaList(areas) {
+    // const listElMarkup = '<div class="areasListContainer"><ul id="areasList"></ul></div>';
+    areasListContainer.innerHTML = '';
+    // const listContainer = document.createElement('div');
+    // listContainer.className = 'areasListContainer';
+    const headMarkup = '<p>Выберите интересующий вас регион и нажмите кнопку «Обновить базу вакансий».</p>';
+    areasListContainer.insertAdjacentHTML('beforeend', headMarkup);
+    // rootEl.appendChild(areasListContainer);
+
+    const listsMarkup = {
+        val: '',
+    }
+
+    addAreaList(areas, listsMarkup);
+
+    areasListContainer.insertAdjacentHTML('beforeend', listsMarkup.val);
+    // rootEl.appendChild(areasListContainer);
+}
+
+function renderData(vacancies, areas, update=false) {
+    if (update) {
+        headerContainer.innerHTML = '';
+        middleContainer.innerHTML = '';
+        mapEl.innerHTML = '';
+    }
     const lenght = Object.keys(vacancies.items).length;
     let vacsWithAddress = 0, vacsWithLatLng = 0;
     vacancies.items.forEach(item => {
@@ -151,59 +248,94 @@ function renderData(vacancies) {
     });
     const dateStr = vacancies.date ? ' Дата базы вакансий: '+vacancies.date.slice(0, 10) : '';
 
-    const markup = `
-        <p>Всего загружено ${lenght} вакансий с сайта hh.ru по региону ${vacancies.areaName}.${dateStr}</p>
+    const markup1 = `<p>Регион: ${vacancies.areaName}.${dateStr}</p>`;
+    headerContainer.insertAdjacentHTML('beforeend', markup1);
+
+    if (!update) renderAreaList(areas);
+
+    const markup2 = `
+        <p>Всего найдено ${vacancies.found.val} вакансий.</p>
+        <p>Загружено: ${lenght} вакансий.</p>
         <p>Из них с адресами: ${vacsWithAddress}.</p>
         <p>Из них с геолокацией: ${vacsWithLatLng}.</p>
-        <button id="updateVacsBtn">Обновить базу вакансий</button>
     `;
-    rootEl.insertAdjacentHTML('beforeend', markup);
+    middleContainer.insertAdjacentHTML('beforeend', markup2);
     
     ymaps.ready(() => {
         renderMap(vacancies.items);
     });
 }
 
-async function updateVacancies() {
-    console.log('updateVacancies');
-    const vacancies = await loadVacancies();
-    const vacDate = await JSON.parse(localStorage.getItem('vacDate'));
+async function loadVacancies(update=false) {
+    let vacancies = null;
+    spinnerEl.style.display = 'inline';
 
-    while (rootEl.firstChild) {
-        rootEl.removeChild(rootEl.firstChild);
+    if (!update) {
+        vacancies = await JSON.parse(localStorage.getItem('vacancies'));
     }
-    const mapEl = document.querySelector('#map');
-    while (mapEl.firstChild) {
-        mapEl.removeChild(mapEl.firstChild);
-    }
-    renderData(vacancies, vacDate);
-}
-
-async function loadVacancies() {
-    let vacancies = await JSON.parse(localStorage.getItem('vacancies'));
 
     if (!vacancies) {
-        const items = await getVacancies(areaCode, -1);
+        const found = { val: 0 };
+        const items = await getVacancies(areaCode, -1, found);
         const date = new Date().toISOString();
         vacancies = {
             items,
             date,
             areaCode,
             areaName,
+            found,
         }
         localStorage.setItem('vacancies', JSON.stringify(vacancies));
     }
-
+    console.log(vacancies);
+    areaCode = oldAreaCode = vacancies.areaCode;
+    areaName = oldAreaName = vacancies.areaName;
+    // console.log('oldAreaCode: '+oldAreaCode);
+    
+    spinnerEl.style.display = 'none';
     return vacancies;
 }
 
 async function main() {
+    const areas = await getAreas();
+    console.log(areas);
+
     const vacancies = await loadVacancies();
 
     if (vacancies) {
-        console.log(vacancies);
-        renderData(vacancies);
-        document.querySelector('#updateVacsBtn').addEventListener('click', updateVacancies);
+        renderData(vacancies, areas);
+        updateVacsBtn.addEventListener('click', async function() {
+            console.log('updateVacancies');
+            const vacancies = await loadVacancies(true);
+            renderData(vacancies, areas, true);
+        });
+        // document.querySelector('#areas-list-container > ul').addEventListener('click', function(e) {
+        areasListContainer.addEventListener('click', function(e) {
+            if (e.target.tagName == 'LI') {
+                e.target.classList.toggle('choosen');
+                if (choosenEl && choosenEl.classList.contains('choosen')) {
+                    choosenEl.classList.remove('choosen');
+                }
+                choosenEl = e.target;
+                if (e.target.classList.contains('choosen')) {
+                    areaCode = e.target.dataset.id;
+                    areaName = e.target.dataset.name;
+                } else {
+                    areaCode = oldAreaCode;
+                    areaName = oldAreaName;
+                }
+                newArea.innerHTML = 'Обновить базу по региону '+areaName+'?';
+                // console.log(areaCode+' '+areaName);
+            }
+        });
+        selectedAreas.addEventListener('click', function(e) {
+            if (e.target.matches('span[data-area]')) {
+                areaCode = e.target.dataset.area;
+                areaName = e.target.innerHTML;
+                newArea.innerHTML = 'Обновить базу по региону '+areaName+'?';
+                // console.log(areaCode+' '+areaName);
+            }
+        });
     }
 }
 
