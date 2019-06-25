@@ -14,6 +14,7 @@ const updateVacsBtn = document.querySelector('#update-vacs-btn');
 const newArea = document.querySelector('#new-area');
 const spinnerEl = document.querySelector('#spinner');
 const mapEl = document.querySelector('#map');
+const nogeoTable = document.querySelector('#nogeoTable');
 const selectedAreas = document.querySelector('#selected-areas');
 const apiUrl = 'https://api.hh.ru/';
 
@@ -230,6 +231,31 @@ function renderAreaList(areas) {
     // rootEl.appendChild(areasListContainer);
 }
 
+function renderNogeoTable(items) {
+    nogeoTable.innerHTML = '';
+    const headMarkup = '<caption>Вакансии без геолокации</caption><tr><th>Работодатель</th><th>Должность</th></tr>';
+    tbodyMarkup = '';
+    items.forEach(vac => {
+        if (!vac.address || !(vac.address.lat && vac.address.lng)) {
+            const empName = vac.employer.name;
+            const vacName = vac.name;
+            const vacUrl = vac.alternate_url;
+    
+            tbodyMarkup += `
+                <tr>
+                    <td>${empName}</td>
+                    <td><a href="${vacUrl}" target="_blank">${vacName}</a></td>
+                </tr>
+            `;
+        }
+    });
+
+    if (tbodyMarkup) {
+        nogeoTable.insertAdjacentHTML('beforeend', headMarkup);
+        nogeoTable.insertAdjacentHTML('beforeend', tbodyMarkup);
+    }
+}
+
 function renderData(vacancies, areas, update=false) {
     if (update) {
         headerContainer.innerHTML = '';
@@ -264,6 +290,8 @@ function renderData(vacancies, areas, update=false) {
     ymaps.ready(() => {
         renderMap(vacancies.items);
     });
+
+    renderNogeoTable(vacancies.items);
 }
 
 async function loadVacancies(update=false) {

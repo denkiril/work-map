@@ -41,9 +41,9 @@ span[data-area] {
     border-bottom: 1px dotted;
 }
 
-#areas-list-container {
+.bc-container {
     max-height: 400px;
-    overflow: scroll;
+    overflow: auto;
     border: solid 1px rgb(68, 68, 68);
 }
 #areas-list-container li {
@@ -65,6 +65,11 @@ span[data-area] {
     margin-top: 20px;
     margin-bottom: 40px;
 }
+@media (max-width: 768px) {
+    #map {
+        height: 400px;
+    }
+}
 
 #spinner {
     width: 24px;
@@ -72,6 +77,17 @@ span[data-area] {
     vertical-align: middle;
     margin-bottom: 4px;
     display: none;
+}
+
+#nogeoTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+#nogeoTable td {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 footer p {
